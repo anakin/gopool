@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"github.com/pkg/errors"
 	"sync"
-	"time"
 )
 
 type Config struct {
@@ -12,7 +11,6 @@ type Config struct {
 	MaxCount  int
 	Factory   func() (interface{}, error)
 	Close     func(interface{}) error
-	Timeout   time.Duration
 }
 
 type listPool struct {
@@ -20,7 +18,6 @@ type listPool struct {
 	conns   *list.List
 	factory func() (interface{}, error)
 	close   func(interface{}) error
-	timeout time.Duration
 }
 
 type GoPool interface {
@@ -35,8 +32,8 @@ var (
 	conn interface{}
 )
 
-func newListPool(config *Config) (GoPool, error) {
-	if config.InitCount < 0 || config.MaxCount >= 0 || config.InitCount > config.MaxCount {
+func NewListPool(config *Config) (GoPool, error) {
+	if config.InitCount < 0 || config.MaxCount <= 0 || config.InitCount > config.MaxCount {
 		return nil, errors.New("invalid config param")
 	}
 	if config.Factory == nil || config.Close == nil {
@@ -46,7 +43,6 @@ func newListPool(config *Config) (GoPool, error) {
 		conns:   list.New(),
 		factory: config.Factory,
 		close:   config.Close,
-		timeout: config.Timeout,
 	}
 	for i := 0; i < config.InitCount; i++ {
 		conn, err := l.factory()
